@@ -4,7 +4,7 @@ const seq = require('../db.js');
 class Review extends Model {}
 
 Review.init({
-  id: {
+  review_id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true

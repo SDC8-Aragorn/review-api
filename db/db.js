@@ -11,8 +11,11 @@ const seq = new Sequelize(database, user, password, {
 });
 
 //use .authenticate() to test the connection
+// seq.authenticate()
+// .then(() => seq.sync({force:true}))
+// .catch((error) => console.log(error));
 seq.authenticate()
-.then(() => seq.sync())
+.then(() => console.log('connected'))
 .catch((error) => console.log(error));
 
 
@@ -20,4 +23,8 @@ module.exports = seq;
 
 // seq.authenticate()
 // .then(() => seq.sync({force:true}))
+// .catch((error) => console.log(error));
+
+// seq.authenticate()
+// .then(() => seq.sync())
 // .catch((error) => console.log(error));

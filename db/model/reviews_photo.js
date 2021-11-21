@@ -14,7 +14,7 @@ Reviews_Photo.init({
     allowNull: false,
     references:{
       model:"Reviews",
-      key: 'id'
+      key: 'review_id'
     },
   },
   url: {
