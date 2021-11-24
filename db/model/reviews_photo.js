@@ -19,9 +19,16 @@ Reviews_Photo.init({
   },
   url: {
     type: DataTypes.TEXT,
+    allowNull: true
+
   },
 
 }, {
+  indexes: [
+    {
+      fields: ['review_id']
+    }
+  ],
   sequelize: seq
 });
 

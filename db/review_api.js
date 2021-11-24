@@ -4,10 +4,14 @@ const Characteristic_Review = require('../db/model/characteristic_reviews.js')
 const Reviews_Photo = require('../db/model/reviews_photo.js')
 const Sequelize = require('sequelize');
 
+/**
+ * Get reviews and review photos from review db and return the full record
+ * @param {*} query
+ * @returns Reviews
+ */
 const getReviews = function(query) {
-  // console.log("getReviews", query)
   var {product_id, page, count, sort} = query;
-  var obj = {
+  var reveiwResponse = {
     product: product_id,
     page: page || 1,
     count: count || 5
@@ -22,7 +26,7 @@ const getReviews = function(query) {
     filter =[['date', 'DESC']]
   }
 
-  var skip = (obj.page -1) * obj.count;
+  var skip = (reveiwResponse.page -1) * reveiwResponse.count;
 
   return Review.findAll({
     attributes: [
@@ -43,47 +47,46 @@ const getReviews = function(query) {
     offset: skip,
     limit: count
   })
-  .then(async reviews => {
+  // .then(async reviews => {
 
-    for (var i = 0; i < reviews.length; i ++) {
-      var id = reviews[i].review_id;
-      let photos = await getReviewPhotos(id)
-      reviews[i].dataValues.photos = photos;
-    }
-    obj['results'] = reviews;
-    if (obj.response === 'null') {
-      obj.response = null;
-    }
-    return obj;
-  })
-  // .then(reviews => {
-  //   var promises = [];
   //   for (var i = 0; i < reviews.length; i ++) {
-  //     var id = reviews[i].review_id;
-  //     promises.push(Reviews_Photo.findAll({
-  //       attributes: [
-  //         'id',
-  //         'url'
-  //       ],
-  //       where: {
-  //         review_id: id
-  //       }
-  //     }));
+  //     var review_id = reviews[i].review_id;
+  //     let photos = await getReviewPhotos(review_id)
+  //     reviews[i].dataValues.photos = photos;
   //   }
-  //   Promise.all(promises)
-  //   .then(photos => {
-
-  //     for (var j = 0; j < photos.length; j ++) {
-  //       reviews[j].dataValues.photos = photos[j];
-  //     }
-  //     obj.results = reviews;
-  //     console.log(obj.results);
-  //     return obj
-  //   })
+  //   obj['results'] = reviews;
+  //   return obj;
   // })
+  .then(reviews => {
+    let promisedPhotoRecords = []
+    for (var i = 0; i < reviews.length; i++) {
+      var id = reviews[i].review_id;
+      promisedPhotoRecords.push(Reviews_Photo.findAll({
+        attributes: [
+          'id',
+          'url'
+        ],
+        where: {
+          review_id: id
+        }
+      }));
+    }
+    return Promise.all(promisedPhotoRecords)
+     .then(photos => {
+
+       for (var j = 0; j < photos.length; j++) {
+         reviews[j].dataValues.photos = photos[j];
+       }
+       reveiwResponse.results = reviews;
+
+       return reveiwResponse;
+     })
+  })
 }
 
-const getReviewPhotos = function (id){
+
+
+const getReviewPhotos = function (id) {
   return Reviews_Photo.findAll({
     attributes: [
       'id',
@@ -96,55 +99,55 @@ const getReviewPhotos = function (id){
 }
 
 
-const getMeta = async function(query) {
+const getMetadata = async function(query) {
   var {product_id} = query;
-  var obj = {
+  var reviewMetaData = {
     product_id: product_id
   }
 
-  var ratings = await getRatings(product_id);
-  // console.log(ratings);
-  var ratingObj = {};
-  for (var i = 0; i < ratings.length; i ++) {
-    var key = ratings[i].dataValues.rating;
-    if (ratingObj[key] === undefined ) {
-      ratingObj[key] = 1;
+  let ratings = getRatings(product_id);
+  let recommend =  getRecommend(product_id);
+  let characteristics = getCharacteristic(product_id);
+
+  let ratingValues = await Promise.all([ratings, recommend, characteristics]);
+  const [ratingsList, recommendCount, characteristicsList] = ratingValues;
+
+  var ratingMetaData = {};
+  for (var i = 0; i < ratingsList.length; i ++) {
+    var key = ratingsList[i].dataValues.rating;
+    if (ratingMetaData[key] === undefined ) {
+      ratingMetaData[key] = 1;
     } else {
-      ratingObj[key] ++;
+      ratingMetaData[key] ++;
     }
 
   }
 
-  var recommend = await getRecommend(product_id);
-  // console.log(recommend);
-  var recommendObj = {};
-  for (var j = 0; j < recommend.length; j ++) {
-    var key = recommend[j].dataValues.recommend;
-    if (recommendObj[key] === undefined) {
-      recommendObj[key] = 1;
+  var recommendMetaData = {};
+  for (var j = 0; j < recommendCount.length; j ++) {
+    var key = recommendCount[j].dataValues.recommend;
+    if (recommendMetaData[key] === undefined) {
+      recommendMetaData[key] = 1;
 
     } else {
-      recommendObj[key] ++;
+      recommendMetaData[key] ++;
     }
   }
 
-  var characteristics = await getCharacteristic(product_id);
-  // console.log(characteristics);
-  var characteristicObj = {};
-  for (var k = 0; k < characteristics.length; k ++) {
-    var id = characteristics[k].dataValues.id;
-    var name = characteristics[k].dataValues.name;
+  var characteristicMetaData = {};
+  for (var k = 0; k < characteristicsList.length; k ++) {
+    var id = characteristicsList[k].dataValues.id;
+    var name = characteristicsList[k].dataValues.name;
     var average = await getAverageChar(id);
-    // console.log(name, id, average);
-    characteristicObj[name] = {id:id, value:average};
+    characteristicMetaData[name] = {id:id, value:average};
 
   }
 
-  obj.ratings = ratingObj;
-  obj.recommended = recommendObj;
-  obj.characteristics = characteristicObj;
+  reviewMetaData.ratings = ratingMetaData;
+  reviewMetaData.recommended = recommendMetaData;
+  reviewMetaData.characteristics = characteristicMetaData;
 
-  return obj;
+  return reviewMetaData;
 }
 
 const getRatings = function(product_id) {
@@ -184,24 +187,26 @@ const getCharacteristic = function(product_id) {
 }
 
 const getAverageChar = async function (characteristic_id) {
-  var count = await Characteristic_Review.count({
+  let countPromise = Characteristic_Review.count({
     where: {
       characteristic_id: characteristic_id
     }
   });
 
-  var sum = await Characteristic_Review.sum('value', {
+  let sumPromise = Characteristic_Review.sum('value', {
     where: {
       characteristic_id: characteristic_id
     }
   })
-
-  return sum/count;
-
+  return Promise.all([countPromise, sumPromise])
+  .then(results => {
+    const [count, sum] = results;
+    return sum/count;
+  })
 }
 
 const addReview = async function (review) {
-  var obj = {
+  var reviewToAdd = {
     product_id: review.product_id,
     rating: review.rating,
     date: Date.now(),
@@ -212,26 +217,15 @@ const addReview = async function (review) {
     reviewer_email: review.email
   };
 
-  var review_id = await Review.max('review_id')
-  // console.log('look at here',review_id);
-  obj.review_id = review_id + 1;
-  // console.log('object', obj);
-
-  var photo_id = await Reviews_Photo.max('id');
-
-  var characteristic_review_id = await Characteristic_Review.max('id');
-
-  return Review.create(obj)
+  return Review.create(reviewToAdd)
   .then(async result => {
-    // console.log('LOOK HERE',result)
-    var promise = [];
+    var promisedPhotoAndChar = [];
     var reviewId = result.review_id;
 
 
     if (review.photos) {
       for (var i = 0; i < review.photos.length; i ++) {
-        promise.push(Reviews_Photo.create({
-          id: photo_id + 1 + i,
+        promisedPhotoAndChar.push(Reviews_Photo.create({
           review_id: reviewId,
           url: review.photos[i]
         }))
@@ -239,44 +233,48 @@ const addReview = async function (review) {
     }
 
     var characteristics = Object.keys(review.characteristics);
-    //e.g.['Size', 'Fit']
-    console.log('Characteriscts', characteristics)
+    //e.g.['14', '15']
 
     var values = Object.values(review.characteristics);
-    //e.g.[4,5]
-    console.log('Values', values);
+    //e.g.[5,5]
 
     for (var j = 0; j < characteristics.length; j ++) {
-
-      var characteristic_id = await Characteristic.findAll({
-        attributes: [
-          'id'
-        ],
-        where: {
-          product_id: review.product_id,
-          name: characteristics[j]
-        }
-      })
-
-      console.log('characeriti_id is here', characteristic_id, characteristic_id[0].dataValues.id);
-
-      console.log('Values', j, values[j]);
-
-      promise.push(Characteristic_Review.create({
-        id: characteristic_review_id + 1 + j,
-        characteristic_id: characteristic_id[0].dataValues.id,
+      promisedPhotoAndChar.push(Characteristic_Review.create({
+        characteristic_id: parseInt(characteristics[j]),
         review_id: reviewId,
         value: values[j],
 
       }))
 
+      // var characteristic_id = await Characteristic.findAll({
+      //   attributes: [
+      //     'id'
+      //   ],
+      //   where: {
+      //     product_id: review.product_id,
+      //     name: characteristics[j]
+      //   }
+      // })
+
+      // console.log('characeriti_id is here', characteristic_id, characteristic_id[0].dataValues.id);
+
+      // console.log('Values', j, values[j]);
+
+      // promise.push(Characteristic_Review.create({
+      //   id: characteristic_review_id + 1 + j,
+      //   characteristic_id: characteristic_id[0].dataValues.id,
+      //   review_id: reviewId,
+      //   value: values[j],
+
+      // }))
+
     }
-    return Promise.all(promise);
+    return Promise.all(promisedPhotoAndChar);
   })
 
 }
 
-const upVote = function(review_id) {
+const markReviewHelpful = function(review_id) {
   return Review.increment('helpfulness', {
     where: {review_id: review_id}
   })
@@ -291,8 +289,8 @@ const reportReview = function(review_id) {
 
 module.exports = {
   getReviews,
-  getMeta,
+  getMetadata,
   addReview,
-  upVote,
+  markReviewHelpful,
   reportReview
 }
