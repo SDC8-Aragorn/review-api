@@ -3,6 +3,7 @@ const Characteristic = require('../db/model/characteristic.js')
 const Characteristic_Review = require('../db/model/characteristic_reviews.js')
 const Reviews_Photo = require('../db/model/reviews_photo.js')
 const Sequelize = require('sequelize');
+const moment = require('moment');
 
 /**
  * Get reviews and review photos from review db and return the full record
@@ -60,6 +61,7 @@ const getReviews = function(query) {
   .then(reviews => {
     let promisedPhotoRecords = []
     for (var i = 0; i < reviews.length; i++) {
+      reviews[i].date = moment(parseInt(reviews[i].date)).toISOString();
       var id = reviews[i].review_id;
       promisedPhotoRecords.push(Reviews_Photo.findAll({
         attributes: [

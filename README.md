@@ -39,7 +39,7 @@
 
 
  - Create indexes on columns that are frequently searched against
- - Avereage response time drop from 25s to handreds of ms
+ - Avereage response time drop from 25s to hundreds of ms
 
 ### Server
 
