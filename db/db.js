@@ -3,7 +3,8 @@ const{ user, database, password } = require ('../config/config.js');
 
 //connect to a database
 const seq = new Sequelize(database, user, password, {
-  host: '/tmp',
+  host: 'ec2-3-131-141-188.us-east-2.compute.amazonaws.com',
+  port: 5432,
   dialect:'postgres',
   define: {
     timestamps: false
@@ -20,6 +21,5 @@ seq.authenticate()
 // seq.authenticate()
 // .then(() => seq.sync({force:true}))
 // .catch((error) => console.log(error));
-
 
 module.exports = seq;
