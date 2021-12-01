@@ -16,6 +16,10 @@ app.get('/', function (req, res) {
   res.send('Hello World')
 });
 
+app.get('/loaderio-43b332d56448134cc7347286383d7668/', function (req, res) {
+  res.sendFile('./loaderio-43b332d56448134cc7347286383d7668.txt')
+});
+
 app.get('/reviews', function (req, res) {
   console.log('GET /reviews working');
   // console.log(req.query);
