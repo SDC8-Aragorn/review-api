@@ -1,3 +1,4 @@
+const newrelic = require('newrelic');
 const express = require('express');
 const seq = require('../db/db.js');
 const Review = require('../db/model/review.js')
@@ -8,7 +9,7 @@ const db = require('../db/review_api.js')
 
 const app = express();
 app.use(express.json());
-const PORT = 3000;
+const PORT = 3100;
 
 
 app.get('/', function (req, res) {
@@ -32,7 +33,7 @@ app.get('/reviews', function (req, res) {
 
 app.get('/reviews/meta', (req, res)=> {
   console.log('GET /review/meta working');
-  db.getMeta(req.query)
+  db.getMetadata(req.query)
   .then(results => {
     res.json(results);
   })
@@ -57,7 +58,7 @@ app.post('/reviews', (req, res)=> {
 //PUT /reviews/:review_id/helpful is working
 app.put('/reviews/:review_id/helpful', (req, res) => {
   console.log('PUT /reviews/:review_id/helpful working');
-  db.upVote(req.params.review_id)
+  db.markReviewHelpful(req.params.review_id)
   .then(results => {
     res.sendStatus(204);
   })

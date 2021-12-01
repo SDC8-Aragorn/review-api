@@ -19,6 +19,11 @@ Characteristic.init({
   },
 
 }, {
+  indexes: [
+    {
+      fields: ['product_id']
+    }
+  ],
   sequelize: seq
 });
 

@@ -30,6 +30,14 @@ Characteristic_Review.init({
   },
 
 }, {
+  indexes: [
+    {
+      fields: ['characteristic_id']
+    },
+    {
+      fields: ['review_id']
+    }
+  ],
   sequelize: seq
 });
 
